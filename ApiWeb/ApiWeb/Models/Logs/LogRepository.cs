@@ -51,7 +51,7 @@ namespace ApiWeb.Models.Logs
 
             using (var db = new LogDb())
             {
-                var entities = db.LogInfos.AsNoTracking().OrderByDescending(q => q.Id).Skip(pageIndex).Take(pageSize);
+                var entities = db.LogInfos.AsNoTracking().OrderByDescending(q => q.Id).Skip(pageIndex * pageSize).Take(pageSize);
 
                 foreach (var entity in entities)
                 {
@@ -86,7 +86,7 @@ namespace ApiWeb.Models.Logs
                     query = query.Where(q => q.Operation.Contains(op));
                 }
 
-                var entities = query.OrderByDescending(q => q.Id).Skip(pageIndex).Take(pageSize);
+                var entities = query.OrderByDescending(q => q.Id).Skip(pageIndex * pageSize).Take(pageSize);
 
                 foreach (var entity in entities)
                 {
