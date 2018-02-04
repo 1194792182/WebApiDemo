@@ -19,7 +19,14 @@ namespace ApiWeb.Controllers
 
         public IHttpActionResult GetDelAllResult(string operType)
         {
-            return Ok(repository.RemoveAll());
+            if (!string.IsNullOrEmpty(operType) && operType.ToLower().Equals("delall"))
+            {
+                return Ok(repository.RemoveAll());
+            }
+            else
+            {
+                return Ok(0);
+            }
         }
 
         public IEnumerable<LogModel> GetByOperation(string op, int pageIndex = 0, int pageSize = 10)
