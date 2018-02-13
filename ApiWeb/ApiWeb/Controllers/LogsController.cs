@@ -1,4 +1,5 @@
-﻿using ApiWeb.Models.Logs;
+﻿using ApiWeb.Filters;
+using ApiWeb.Models.Logs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ namespace ApiWeb.Controllers
     {
         static readonly ILogRepository repository = new LogRepository();
 
+        [SecurityFilter]
         public IEnumerable<LogModel> GetAllLogs(int pageIndex = 0, int pageSize = 10)
         {
             return repository.GetAll(pageIndex, pageSize);
@@ -34,6 +36,8 @@ namespace ApiWeb.Controllers
             return repository.GetAll(op, pageIndex, pageSize);
         }
 
+
+        [SecurityFilter]
         [HttpPost]
         public IHttpActionResult InsertLog(LogModel item)
         {
@@ -41,6 +45,7 @@ namespace ApiWeb.Controllers
             return Json(item);
         }
 
+        [SecurityFilter]
         [HttpDelete]
         public IHttpActionResult RemoveLogById(int id)
         {

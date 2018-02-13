@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,18 +21,21 @@ namespace ApiTest
             try
             {
                 //WebLog("测试");
-                //GetWebLog(0,1);
+                //GetWebLog(0, 10);
+                //GetLogByOperateType(op: "普通操作");
+                //DelAllLog();
+                //DelById(1027);
                 //var remark = GetLongRemark();
-                var remark = "备注信息";
-                var product = new Product()
-                {
-                    Name = "名称",
-                    Desc = remark,
-                };
+                //var remark = "备注信息";
+                //var product = new Product()
+                //{
+                //    Name = "名称",
+                //    Desc = remark,
+                //};
 
-                remark = JsonConvert.SerializeObject(product);
+                //remark = JsonConvert.SerializeObject(product);
 
-                WebLog(userCode: "000001", userName: "张三", operation: "普通操作", remark: remark);
+                //WebLog(userCode: "000001", userName: "张三", operation: "普通操作", remark: remark);
             }
             catch (Exception ex)
             {
@@ -63,7 +67,7 @@ namespace ApiTest
             dic.Add("Remark", remark);
             dic.Add("DateTime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 
-            var queryStr = DicToQueryStr(dic);
+            var queryStr = GetQueryStr(dic);
 
             var response = CreatePostHttpResponse(_logUrl, queryStr, Encoding.UTF8);
             if (response != null)
@@ -80,7 +84,10 @@ namespace ApiTest
 
         static void WebLog(string msg)
         {
-            var response = CreatePostHttpResponse(_logUrl, "Remark="+msg, Encoding.UTF8);
+            var dic = new Dictionary<string, string>();
+            dic.Add("Remark", msg);
+            var queryStr = GetQueryStr(dic);
+            var response = CreatePostHttpResponse(_logUrl, queryStr, Encoding.UTF8);
             if (response != null)
             {
                 var stream = response.GetResponseStream(); //获取响应的字符串流
@@ -93,13 +100,58 @@ namespace ApiTest
             }
         }
 
+        static void DelById(int id)
+        {
+            var dic = new Dictionary<string, string>();
+            dic.Add("id", id.ToString());
+            var queryStr = GetQueryStr(dic);
+            var result = DeleteResponse(_logUrl + "?" + queryStr);
+            Console.WriteLine(result);
+        }
+
         static string GetWebLog(int pageIndex = 0, int pageSize = 10)
         {
-            var result = HttpGet(_logUrl + "?pageIndex=" + pageIndex + "&pageSize=" + pageSize, Encoding.UTF8);
+            var dic = new Dictionary<string, string>();
+            dic.Add("pageIndex", pageIndex.ToString());
+            dic.Add("pageSize", pageSize.ToString());
+            var queryStr = GetQueryStr(dic);
+
+            var result = HttpGet(_logUrl + "?" + queryStr, Encoding.UTF8);
 
             Console.WriteLine(result);
+            Console.ReadLine();
 
             return result;
+        }
+
+        static string GetLogByOperateType(string op, int pageIndex = 0, int pageSize = 10)
+        {
+            var dic = new Dictionary<string, string>();
+            dic.Add("op", op);
+            dic.Add("pageIndex", pageIndex.ToString());
+            dic.Add("pageSize", pageSize.ToString());
+            var queryStr = GetQueryStr(dic);
+
+            var result = HttpGet(_logUrl + "?" + queryStr, Encoding.UTF8);
+
+            Console.WriteLine(result);
+            Console.ReadLine();
+
+            return result;
+        }
+
+        static void DelAllLog()
+        {
+            var dic = new Dictionary<string, string>();
+
+            dic.Add("operType", "delall");
+
+            var queryStr = GetQueryStr(dic);
+
+            var result = HttpGet(_logUrl + "?" + queryStr, Encoding.UTF8);
+
+            Console.WriteLine(result);
+            Console.ReadLine();
         }
 
         private static HttpWebResponse CreatePostHttpResponse(string url, string datas, Encoding charset)
@@ -127,6 +179,45 @@ namespace ApiTest
             }
         }
 
+        static string DeleteResponse(string url)
+        {
+            var result = string.Empty;
+            HttpWebRequest request = null;
+            HttpWebResponse response = null;
+
+            //请求url以获取数据
+            try
+            {
+                
+                request = (HttpWebRequest)WebRequest.Create(url);
+                request.Method = "DELETE";
+                
+                //获取服务器返回
+                response = (HttpWebResponse)request.GetResponse();
+                //获取HTTP返回数据
+                var sr = new StreamReader(response.GetResponseStream(), Encoding.UTF8);
+                result = sr.ReadToEnd().Trim();
+                sr.Close();
+            }
+            catch (Exception e)
+            {
+                
+            }
+            finally
+            {
+                //关闭连接和流
+                if (response != null)
+                {
+                    response.Close();
+                }
+                if (request != null)
+                {
+                    request.Abort();
+                }
+            }
+            return result;
+        }
+
 
         private static bool CheckValidationResult(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors)
         {
@@ -145,10 +236,57 @@ namespace ApiTest
             var list = new List<string>();
             foreach (var dic in dictionary)
             {
+                list.Add(dic.Key + "=" + System.Web.HttpUtility.UrlEncode(dic.Value, Encoding.UTF8));
+            }
+
+            return string.Join("&", list);
+        }
+
+        private static string DicOrderByKeyToQueryStr(Dictionary<string, string> dictionary)
+        {
+            var list = new List<string>();
+            foreach (var dic in dictionary.OrderBy(q => q.Key))
+            {
                 list.Add(dic.Key + "=" + dic.Value);
             }
 
             return string.Join("&", list);
+        }
+
+        private static string Sha1(string content)
+        {
+            try
+            {
+                SHA1 sha1 = new SHA1CryptoServiceProvider();
+                byte[] bytes_in = Encoding.UTF8.GetBytes(content);
+                byte[] bytes_out = sha1.ComputeHash(bytes_in);
+                sha1.Dispose();
+                string result = BitConverter.ToString(bytes_out);
+                result = result.Replace("-", "");
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("SHA1加密出错：" + ex.Message);
+            }
+        }
+
+        private static string GetQueryStr(Dictionary<string, string> dic)
+        {
+            var secretDic = dic;
+            secretDic.Add("timestamp", GetTimestamp());
+            secretDic.Add("salt", "4454b7e8b23146c6b4f273c579aef2dd");
+            var secretSourceStr = DicOrderByKeyToQueryStr(secretDic);
+            var secretStr = Sha1(secretSourceStr);
+            dic.Add("appKey", secretStr);
+            dic.Remove("salt");
+            return DicToQueryStr(dic);
+        }
+
+        private static string GetTimestamp()
+        {
+            TimeSpan ts = DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            return Convert.ToInt64(ts.TotalSeconds).ToString();
         }
     }
 }
