@@ -51,13 +51,13 @@ namespace ApiTest
             return str;
         }
 
-        static void WebLog(string userCode= "000001", string userName= "Admin", string LoginIP= "127.0.0.1"
+        static void WebLog(string userCode= "000001", string userName= "Admin", string loginIp= "127.0.0.1"
             , int type=1,string operation= "普通操作", string remark="")
         {
             var dic = new Dictionary<string, string>();
             dic.Add("UserCode", userCode);
             dic.Add("UserName", userName);
-            dic.Add("LoginIP", LoginIP);
+            dic.Add("LoginIP", loginIp);
             dic.Add("Type", type.ToString());
             dic.Add("Operation", operation);
             dic.Add("Remark", remark);
