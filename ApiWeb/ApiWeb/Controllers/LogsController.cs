@@ -12,7 +12,7 @@ namespace ApiWeb.Controllers
     {
         static readonly ILogRepository repository = new LogRepository();
 
-        public IEnumerable<LogModel> GetAllProducts(int pageIndex = 0, int pageSize = 10)
+        public IEnumerable<LogModel> GetAllLogs(int pageIndex = 0, int pageSize = 10)
         {
             return repository.GetAll(pageIndex, pageSize);
         }
